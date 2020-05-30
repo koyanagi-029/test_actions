@@ -1,41 +1,77 @@
-TARGET_EXEC ?= a.out
- 
-BUILD_DIR ?= ./build
-SRC_DIRS ?= ./src
- 
-SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+# Makefile Template.
+
+# .
+# |-- Makefile (This file)
+# |-- build
+# |   `-- target file.
+#     |-- obj
+#         `-- object files.
+# |-- include
+# |   `-- header files.
+# `-- source
+#     `-- source files.
+
+# Variables
+## Directory defines
+BUILDDIR = ./build
+OBJDIR = $(BUILDDIR)/obj
+SRCDIR = ./source
+INCDIRS = ./include
+LIBDIRS = #-L
+
+## Target name
+TARGET = $(BUILDDIR)/a.out
+
+## Compiler options
+CC = gcc
+CFLAGS = -O2 -Wall
+CXX = g++
+CXXFLAGS = -O2 -Wall
+LDFLAGS =
+
+SRCS := $(shell find $(SRCDIR) -name *.cpp -or -name *.c -or -name *.s)
+OBJS := $(SRCS:%=$(OBJDIR)/%.o)
 DEPS := $(OBJS:.o=.d)
- 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d)
-INC_FLAGS := $(addprefix -I,$(INC_DIRS))
- 
-CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
- 
-$(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-    $(CC) $(OBJS) -o $@ $(LDFLAGS)
- 
+LIBS = #-lboost_system -lboost_thread
+
+INCLUDE := $(shell find $(INCDIRS) -type d)
+INCLUDE := $(addprefix -I,$(INCLUDE))
+
+CPPFLAGS := $(INCLUDE) -MMD -MP
+LDFLAGS += $(LIBDIRS) $(LIBS)
+
+# Target
+default:
+	make all
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
 # assembly
-$(BUILD_DIR)/%.s.o: %.s
-    $(MKDIR_P) $(dir $@)
-    $(AS) $(ASFLAGS) -c $< -o $@
- 
+$(OBJDIR)/%.s.o: %.s
+	$(MKDIR_P) $(dir $@)
+	$(AS) $(ASFLAGS) -c $< -o $@
+
 # c source
-$(BUILD_DIR)/%.c.o: %.c
-    $(MKDIR_P) $(dir $@)
-    $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
- 
+$(OBJDIR)/%.c.o: %.c
+	$(MKDIR_P) $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
 # c++ source
-$(BUILD_DIR)/%.cpp.o: %.cpp
-    $(MKDIR_P) $(dir $@)
-    $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
- 
- 
-.PHONY: clean
- 
+$(OBJDIR)/%.cpp.o: %.cpp
+	$(MKDIR_P) $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	
+.PHONY: all clean rebuild
+
 clean:
-    $(RM) -r $(BUILD_DIR)
- 
+	$(RM) -r $(BUILDDIR)
+
+rebuild:
+	make clean && make
+
 -include $(DEPS)
- 
-MKDIR_P ?= mkdir –p
+
+MKDIR_P = mkdir -p
